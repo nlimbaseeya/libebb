@@ -358,7 +358,6 @@ int request_eq
 
 void request_complete(ebb_request *info)
 {
- // printf("request complete\n");
   num_requests++;
 }
 
@@ -448,9 +447,9 @@ int test_request
   parser_init();
 
   traversed = ebb_request_parser_execute( &parser
-                                , request_data->raw 
-                                , strlen(request_data->raw)
-                                );
+                                        , request_data->raw 
+                                        , strlen(request_data->raw)
+                                        );
   if( ebb_request_parser_has_error(&parser) )
     return FALSE;
   if(! ebb_request_parser_is_finished(&parser) )

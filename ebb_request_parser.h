@@ -61,7 +61,6 @@ struct ebb_request {
 
   size_t content_length;             /* ro - 0 if unknown */
   size_t body_read;                  /* ro */
-  int eating_body;                   /* ro */
   int expect_continue;               /* ro */
   unsigned int version_major;        /* ro */
   unsigned int version_minor;        /* ro */

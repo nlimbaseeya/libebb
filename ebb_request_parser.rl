@@ -54,10 +54,11 @@
                 , CURRENT->number_of_headers        \
                 );                                  \
  }
-#define END_REQUEST                       \
-    if(CURRENT->on_complete)              \
-      CURRENT->on_complete(CURRENT);      \
+#define END_REQUEST                        \
+    if(CURRENT->on_complete)               \
+      CURRENT->on_complete(CURRENT);       \
     CURRENT = NULL;
+
 
 %%{
   machine ebb_request_parser;
@@ -85,43 +86,36 @@
   action method_unlock       { CURRENT->method = EBB_UNLOCK;    }
 
   action write_field { 
-    //printf("write_field!\n");
     HEADER_CALLBACK(header_field);
     parser->header_field_mark = NULL;
   }
 
   action write_value {
-    //printf("write_value!\n");
     HEADER_CALLBACK(header_value);
     parser->header_value_mark = NULL;
   }
 
   action request_uri { 
-    //printf("request uri\n");
     CALLBACK(uri);
     parser->uri_mark = NULL;
   }
 
   action fragment { 
-    //printf("fragment\n");
     CALLBACK(fragment);
     parser->fragment_mark = NULL;
   }
 
   action query_string { 
-    //printf("query  string\n");
     CALLBACK(query_string);
     parser->query_string_mark = NULL;
   }
 
   action request_path {
-    //printf("request path\n");
     CALLBACK(path);
     parser->path_mark = NULL;
   }
 
   action content_length {
-    //printf("content_length!\n");
     CURRENT->content_length *= 10;
     CURRENT->content_length += *p - '0';
   }
@@ -145,7 +139,6 @@
   }
 
   action trailer {
-    //printf("trailer\n");
     /* not implemenetd yet. (do requests even have trailing headers?) */
   }
 
@@ -169,7 +162,6 @@
   }
 
   action add_to_chunk_size {
-    //printf("add to chunk size\n");
     parser->chunk_size *= 16;
     /* XXX: this can be optimized slightly  */
     if( 'A' <= *p && *p <= 'F') 
@@ -183,26 +175,20 @@
   }
 
   action skip_chunk_data {
-    //printf("skip chunk data\n");
-    //printf("chunk_size: %d\n", parser->chunk_size);
     if(parser->chunk_size > REMAINING) {
-      parser->eating = TRUE;
-      CURRENT->on_body(CURRENT, p, REMAINING);
-      parser->chunk_size -= REMAINING;
+      skip_body(&p, parser, REMAINING);
+
       fhold; 
       fbreak;
     } else {
-      CURRENT->on_body(CURRENT, p, parser->chunk_size);
-      p += parser->chunk_size;
-      parser->chunk_size = 0;
-      parser->eating = FALSE;
+      skip_body(&p, parser, parser->chunk_size);
+
       fhold; 
       fgoto chunk_end; 
     }
   }
 
   action end_chunked_body {
-    //printf("end chunked body\n");
     END_REQUEST;
     fret; // goto Request; 
   }
@@ -216,6 +202,8 @@
     if(CURRENT->transfer_encoding == EBB_CHUNKED) {
       fcall ChunkedBody;
     } else {
+      parser->chunk_size = CURRENT->content_length;
+
       /*
        * EAT BODY
        * this is very ugly. sorry.
@@ -234,15 +222,9 @@
          *
          */
         p += 1;
-        if( CURRENT->on_body )
-          CURRENT->on_body(CURRENT, p, CURRENT->content_length); 
-
-        p += CURRENT->content_length;
-        CURRENT->body_read = CURRENT->content_length;
+        skip_body(&p, parser, CURRENT->content_length);
 
         assert(0 <= REMAINING);
-
-        END_REQUEST;
 
         fhold;
 
@@ -256,15 +238,7 @@
          *
          */
         p += 1;
-        size_t eat = REMAINING;
-
-        if( CURRENT->on_body && eat > 0)
-          CURRENT->on_body(CURRENT, p, eat); 
-
-        p += eat;
-        CURRENT->body_read += eat;
-        CURRENT->eating_body = TRUE;
-        //printf("eating body!\n");
+        skip_body(&p, parser, REMAINING);
 
         assert(CURRENT->body_read < CURRENT->content_length);
         assert(REMAINING == 0);
@@ -385,6 +359,24 @@
 
 #define COPYSTACK(dest, src)  for(i = 0; i < EBB_RAGEL_STACK_SIZE; i++) { dest[i] = src[i]; }
 
+static void
+skip_body(const char **p, ebb_request_parser *parser, size_t nskip) {
+  if(CURRENT->on_body && nskip > 0) {
+    CURRENT->on_body(CURRENT, *p, nskip);
+  }
+  CURRENT->body_read += nskip;
+  parser->chunk_size -= nskip;
+  *p += nskip;
+  if(0 == parser->chunk_size) {
+    parser->eating = FALSE;
+    if(CURRENT->transfer_encoding == EBB_IDENTITY) {
+      END_REQUEST;
+    }
+  } else {
+    parser->eating = TRUE;
+  }
+}
+
 void ebb_request_parser_init(ebb_request_parser *parser) 
 {
   int i;
@@ -427,36 +419,18 @@ size_t ebb_request_parser_execute(ebb_request_parser *parser, const char *buffer
 
   if(0 < parser->chunk_size && parser->eating) {
     /*
-     *
-     * eat chunked body
-     * 
+     * eat body
      */
-    //printf("eat chunk body (before parse)\n");
+
     size_t eat = MIN(len, parser->chunk_size);
-    if(eat == parser->chunk_size) {
-      parser->eating = FALSE;
-    }
-    CURRENT->on_body(CURRENT, p, eat);
-    p += eat;
-    parser->chunk_size -= eat;
-    //printf("eat: %d\n", eat);
-  } else if( parser->current_request && CURRENT->eating_body ) {
-    /*
-     *
-     * eat normal body
-     * 
-     */
-    //printf("eat normal body (before parse)\n");
-    size_t eat = MIN(len, CURRENT->content_length - CURRENT->body_read);
 
-    CURRENT->on_body(CURRENT, p, eat);
-    p += eat;
-    CURRENT->body_read += eat;
+    if(CURRENT->transfer_encoding == EBB_IDENTITY)
+      assert(CURRENT->body_read <= CURRENT->content_length);
+    assert(parser->chunk_size >= 0);
 
-    if(CURRENT->body_read == CURRENT->content_length) {
-      END_REQUEST;
-    }
-  }
+
+     skip_body(&p, parser, eat);
+  } 
 
   if(parser->header_field_mark)   parser->header_field_mark   = buffer;
   if(parser->header_value_mark)   parser->header_value_mark   = buffer;
@@ -496,7 +470,6 @@ int ebb_request_parser_is_finished(ebb_request_parser *parser)
 void ebb_request_init(ebb_request *request)
 {
   request->expect_continue = FALSE;
-  request->eating_body = 0;
   request->body_read = 0;
   request->content_length = 0;
   request->version_major = 0;
