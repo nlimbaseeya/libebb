@@ -175,15 +175,11 @@
   }
 
   action skip_chunk_data {
+    skip_body(&p, parser, MIN(parser->chunk_size, REMAINING));
+    fhold; 
     if(parser->chunk_size > REMAINING) {
-      skip_body(&p, parser, REMAINING);
-
-      fhold; 
       fbreak;
     } else {
-      skip_body(&p, parser, parser->chunk_size);
-
-      fhold; 
       fgoto chunk_end; 
     }
   }
@@ -202,49 +198,16 @@
     if(CURRENT->transfer_encoding == EBB_CHUNKED) {
       fcall ChunkedBody;
     } else {
-      parser->chunk_size = CURRENT->content_length;
-
-      /*
-       * EAT BODY
-       * this is very ugly. sorry.
-       *
+      /* this is pretty stupid.
+       * i'd prefer to combine this with skip_chunk_data
        */
-      if( CURRENT->content_length == 0) {
-
-        END_REQUEST;
-
-      } else if( CURRENT->content_length < REMAINING ) {
-        /* 
-         * 
-         * FINISH EATING THE BODY. there is still more 
-         * on the buffer - so we just let it continue
-         * parsing after we're done
-         *
-         */
-        p += 1;
-        skip_body(&p, parser, CURRENT->content_length);
-
-        assert(0 <= REMAINING);
-
-        fhold;
-
-      } else {
-        /* 
-         * The body is larger than the buffer
-         * EAT REST OF BUFFER
-         * there is still more to read though. this will  
-         * be handled on the next invokion of ebb_request_parser_execute
-         * right before we enter the state machine. 
-         *
-         */
-        p += 1;
-        skip_body(&p, parser, REMAINING);
-
-        assert(CURRENT->body_read < CURRENT->content_length);
-        assert(REMAINING == 0);
-        
-        fhold; fbreak;  
-      }
+      parser->chunk_size = CURRENT->content_length;
+      p += 1;  
+      skip_body(&p, parser, MIN(REMAINING, CURRENT->content_length));
+      fhold;
+      if(parser->chunk_size > REMAINING) {
+        fbreak;
+      } 
     }
   }
 
@@ -421,15 +384,8 @@ size_t ebb_request_parser_execute(ebb_request_parser *parser, const char *buffer
     /*
      * eat body
      */
-
     size_t eat = MIN(len, parser->chunk_size);
-
-    if(CURRENT->transfer_encoding == EBB_IDENTITY)
-      assert(CURRENT->body_read <= CURRENT->content_length);
-    assert(parser->chunk_size >= 0);
-
-
-     skip_body(&p, parser, eat);
+    skip_body(&p, parser, eat);
   } 
 
   if(parser->header_field_mark)   parser->header_field_mark   = buffer;
