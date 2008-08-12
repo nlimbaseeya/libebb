@@ -349,13 +349,13 @@
                | "close"i %set_not_keep_alive
                )
              )
-           | ("Content-Type"i hsep 
-              "multipart/form-data" any* 
-              "boundary=" quote token+ $multipart_boundary quote
-             )
+         # | ("Content-Type"i hsep 
+         #    "multipart/form-data" any* 
+         #    "boundary=" quote token+ $multipart_boundary quote
+         #   )
            | ("Transfer-Encoding"i %use_chunked_encoding hsep "identity" %use_identity_encoding)
-           | ("Expect"i hsep "100-continue"i %expect_continue)
-           | ("Trailer"i hsep field_value %trailer)
+         # | ("Expect"i hsep "100-continue"i %expect_continue)
+         # | ("Trailer"i hsep field_value %trailer)
            | (Field_Name hsep Field_Value)
            ) :> CRLF;
 
