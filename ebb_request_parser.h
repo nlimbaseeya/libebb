@@ -35,7 +35,6 @@ typedef struct ebb_request_parser  ebb_request_parser;
 typedef void (*ebb_header_cb)(ebb_request*, const char *at, size_t length, int header_index);
 typedef void (*ebb_element_cb)(ebb_request*, const char *at, size_t length);
 
-#define EBB_RAGEL_STACK_SIZE 10
 #define EBB_MAX_MULTIPART_BOUNDARY_LEN 20
 
 struct ebb_request {
@@ -85,8 +84,6 @@ struct ebb_request {
 
 struct ebb_request_parser {
   int cs;                           /* private */
-  int stack[EBB_RAGEL_STACK_SIZE];  /* private */
-  int top;                          /* private */
   size_t chunk_size;                /* private */
   unsigned eating:1;                /* private */
   ebb_request *current_request;     /* ro */

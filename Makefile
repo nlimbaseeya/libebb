@@ -130,7 +130,7 @@ clobber: clean
 .PHONY: clean clobber
 
 test: test_request_parser test_rbtree
-	./test_request_parser
+	time ./test_request_parser
 	./test_rbtree
 
 test_rbtree: test_rbtree.o $(OUTPUT_A)
@@ -144,7 +144,7 @@ test_request_parser: test_request_parser.o $(OUTPUT_A)
 examples: examples/hello_world
 
 examples/hello_world: examples/hello_world.o $(OUTPUT_A) 
-	$(CC) -lev -o $@ $< $(OUTPUT_A)
+	$(CC) $(LIBS) $(CFLAGS) -lev -o $@ $< $(OUTPUT_A)
 
 .PHONY: examples
 

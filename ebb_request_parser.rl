@@ -186,7 +186,7 @@
 
   action end_chunked_body {
     END_REQUEST;
-    fret; // goto Request; 
+    fnext main;
   }
 
   action start_req {
@@ -196,11 +196,9 @@
 
   action body_logic {
     if(CURRENT->transfer_encoding == EBB_CHUNKED) {
-      fcall ChunkedBody;
+      fnext ChunkedBody;
     } else {
-      /* this is pretty stupid.
-       * i'd prefer to combine this with skip_chunk_data
-       */
+      /* this is pretty stupid. i'd prefer to combine this with skip_chunk_data */
       parser->chunk_size = CURRENT->content_length;
       p += 1;  
       skip_body(&p, parser, MIN(REMAINING, CURRENT->content_length));
@@ -315,12 +313,10 @@
 
   Request = RequestHeader >start_req @body_logic;
 
-  main := Request+; # sequence of requests (for keep-alive)
+  main := Request*; # sequence of requests (for keep-alive)
 }%%
 
 %% write data;
-
-#define COPYSTACK(dest, src)  for(i = 0; i < EBB_RAGEL_STACK_SIZE; i++) { dest[i] = src[i]; }
 
 static void
 skip_body(const char **p, ebb_request_parser *parser, size_t nskip) {
@@ -342,15 +338,9 @@ skip_body(const char **p, ebb_request_parser *parser, size_t nskip) {
 
 void ebb_request_parser_init(ebb_request_parser *parser) 
 {
-  int i;
-
   int cs = 0;
-  int top = 0;
-  int stack[EBB_RAGEL_STACK_SIZE];
   %% write init;
   parser->cs = cs;
-  parser->top = top;
-  COPYSTACK(parser->stack, stack);
 
   parser->chunk_size = 0;
   parser->eating = 0;
@@ -369,11 +359,7 @@ void ebb_request_parser_init(ebb_request_parser *parser)
 size_t ebb_request_parser_execute(ebb_request_parser *parser, const char *buffer, size_t len)
 {
   const char *p, *pe;
-  int i, cs = parser->cs;
-
-  int top = parser->top;
-  int stack[EBB_RAGEL_STACK_SIZE];
-  COPYSTACK(stack, parser->stack);
+  int cs = parser->cs;
 
   assert(parser->new_request && "undefined callback");
 
@@ -398,8 +384,6 @@ size_t ebb_request_parser_execute(ebb_request_parser *parser, const char *buffer
   %% write exec;
 
   parser->cs = cs;
-  parser->top = top;
-  COPYSTACK(parser->stack, stack);
 
   HEADER_CALLBACK(header_field);
   HEADER_CALLBACK(header_value);
