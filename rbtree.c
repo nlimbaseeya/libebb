@@ -38,10 +38,10 @@ static node sibling(node n);
 static node uncle(node n);
 static void verify_properties(rbtree t);
 static void verify_property_1(node root);
-static void verify_property_2(node root);
+/* static void verify_property_2(node root); */
 static color node_color(node n);
 static void verify_property_4(node root);
-static void verify_property_5(node root);
+/* static void verify_property_5(node root); */
 static void verify_property_5_helper(node n, int black_count, int* black_count_path);
 
 static node lookup_node(rbtree t, void* key);
@@ -102,9 +102,11 @@ void verify_property_1(node n) {
     verify_property_1(n->right);
 }
 
+/*
 void verify_property_2(node root) {
     assert(node_color(root) == BLACK);
 }
+*/
 
 color node_color(node n) {
     return n == NULL ? BLACK : n->color;
@@ -121,10 +123,12 @@ void verify_property_4(node n) {
     verify_property_4(n->right);
 }
 
+/*
 void verify_property_5(node root) {
     int black_count_path = -1;
     verify_property_5_helper(root, 0, &black_count_path);
 }
+*/
 
 void verify_property_5_helper(node n, int black_count, int* path_black_count) {
     if (node_color(n) == BLACK) {

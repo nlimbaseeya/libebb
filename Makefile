@@ -16,19 +16,23 @@ all: options $(OUTPUT_LIB) $(OUTPUT_A)
 
 options:
 	@echo libebb build options:
+	@echo "CC       = ${CC}"
 	@echo "CFLAGS   = ${CFLAGS}"
 	@echo "LDFLAGS  = ${LDFLAGS}"
 	@echo "LDOPT    = ${LDOPT}"
 	@echo "SUFFIX   = ${SUFFIX}"
 	@echo "SONAME   = ${SONAME}"
-	@echo "CC       = ${CC}"
+	@echo
 
 $(OUTPUT_LIB): $(OBJ) 
-	$(LINKER) -o $(OUTPUT_LIB) $(OBJ) $(SONAME) $(LIBS)
+	@echo LINK $@
+	@$(LINKER) -o $(OUTPUT_LIB) $(OBJ) $(SONAME) $(LIBS)
 
 $(OUTPUT_A): $(OBJ)
-	$(AR) cru $(OUTPUT_A) $(OBJ)
-	$(RANLIB) $(OUTPUT_A)
+	@echo AR $@
+	@$(AR) cru $(OUTPUT_A) $(OBJ)
+	@echo RANLIB $@
+	@$(RANLIB) $(OUTPUT_A)
 
 .c.o:
 	@echo CC $<
@@ -37,7 +41,8 @@ $(OUTPUT_A): $(OBJ)
 ${OBJ}: ebb.h ebb_request_parser.h rbtree.h config.mk
 
 ebb_request_parser.c: ebb_request_parser.rl
-	ragel -s -G2 $< -o $@
+	@echo RAGEL $<
+	@ragel -s -G2 $< -o $@
 
 test: test_request_parser test_rbtree
 	time ./test_request_parser
@@ -56,7 +61,7 @@ examples/hello_world: examples/hello_world.o $(OUTPUT_A)
 
 clean:
 	@echo cleaning
-	@rm -f ${OBJ} libebb-${VERSION}.tar.gz test_rbtree test_request_parser examples/hello_world
+	@rm -f ${OBJ} $(OUTPUT_A) $(OUTPUT_LIB) libebb-${VERSION}.tar.gz test_rbtree test_request_parser examples/hello_world
 
 clobber: clean
 	@echo clobbering

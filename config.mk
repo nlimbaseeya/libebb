@@ -4,12 +4,12 @@ VERSION = 0.1
 # Customize below to fit your system
 
 # paths
-PREFIX = /usr/local
+PREFIX = $(HOME)/local
 MANPREFIX = ${PREFIX}/share/man
 
 # libev
-EVINC = /usr/local/include
-EVLIB = /usr/local/lib
+EVINC = $(HOME)/local/libev/include
+EVLIB = $(HOME)/local/libev/lib
 
 # GnuTLS, comment if you don't want it (necessary for HTTPS)
 GNUTLSLIB   = /usr/lib
@@ -18,9 +18,9 @@ GNUTLSLIBS  = -L${GNUTLSLIB} -lgnutls
 GNUTLSFLAGS = -DHAVE_GNUTLS
 
 # libeio, comment if you don't want it (necessary for sendfile)
-EIOLIB   = /usr/lib
-EIOINC   = /usr/include
-EIOLIBS  = -L${EIOLIB} -lgnutls
+EIOLIB   = $(HOME)/local/libeio/lib
+EIOINC   = $(HOME)/local/libeio/include
+EIOLIBS  = -L${EIOLIB} -leio
 EIOFLAGS = -DHAVE_EIO
 
 # includes and libs

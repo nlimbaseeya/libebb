@@ -3,6 +3,8 @@ see doc/index.html and examples/hello_world.c for explanation
 webpage: http://tinyclouds.org/libebb/
 git repository: http://github.com/ry/libebb/tree/master
 
+To build libebb please edit config.mk to reflect your system's parameters.
+
 (The MIT) LICENSE
 Copyright © 2008 Ryan Dahl (ry@tinyclouds.org)
 
