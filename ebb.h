@@ -44,13 +44,10 @@ typedef struct ebb_buf        ebb_buf;
 typedef struct ebb_server     ebb_server;
 typedef struct ebb_connection ebb_connection;
 typedef void (*ebb_after_write_cb) (ebb_connection *connection); 
-
 typedef void (*ebb_connection_cb)(ebb_connection *connection, void *data);
 
 struct ebb_buf {
-  size_t written; /* private */
-
-  /* public */
+  /* all public */
   char *base;
   size_t len;
   void (*on_release)(ebb_buf*);
@@ -107,22 +104,16 @@ struct ebb_connection {
 
   ebb_request* (*new_request) (ebb_connection*); 
 
-  /* The new_buf callback allocates and initializes an ebb_buf structure.
-   * By default this is set to a simple malloc() based callback which always
-   * returns 4 kilobyte bufs.  Write over it with your own to use your own
-   * custom allocation
-   *
-   * new_buf is called each time there is data from a client connection to
+  /* new_buf is called each time there is data from a client connection to
    * be read. See on_readable() in server.c to see exactly how this is used.
+   * It is optional. If not supplied data will be read into a statically 
+   * allocated buffer.
    */
   ebb_buf* (*new_buf) (ebb_connection*); 
 
-  /* Returns EBB_STOP or EBB_AGAIN 
-   * NULL by default.
-   */
+  /* Returns EBB_STOP or EBB_AGAIN. NULL by default.  */
   int (*on_timeout) (ebb_connection*); 
 
-  /* The connection was closed */
   void (*on_close) (ebb_connection*); 
 
   void *data;
@@ -137,9 +128,9 @@ int ebb_server_listen_on_port (ebb_server *server, const int port);
 int ebb_server_listen_on_fd (ebb_server *server, const int sfd);
 void ebb_server_unlisten (ebb_server *server);
 
-void ebb_connection_init (ebb_connection *connection);
+void ebb_connection_init (ebb_connection *);
 void ebb_connection_schedule_close (ebb_connection *);
-void ebb_connection_reset_timeout (ebb_connection *connection);
-int ebb_connection_write (ebb_connection *connection, const char *buf, size_t len, ebb_after_write_cb);
+void ebb_connection_reset_timeout (ebb_connection *);
+int ebb_connection_write (ebb_connection *, const char *buf, size_t len, ebb_after_write_cb);
 
 #endif

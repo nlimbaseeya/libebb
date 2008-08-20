@@ -790,8 +790,6 @@ ebb_connection_reset_timeout(ebb_connection *connection)
  * Writes a string to the socket. This is actually sets a watcher
  * which may take multiple iterations to write the entire string.
  *
- * The buf->on_release() callback will be made when the operation is complete.
- *
  * This can only be called once at a time. If you call it again
  * while the connection is writing another buffer the ebb_connection_write
  * will return FALSE and ignore the request.
@@ -809,3 +807,4 @@ ebb_connection_write (ebb_connection *connection, const char *buf, size_t len, e
   ev_io_start(connection->server->loop, &connection->write_watcher);
   return TRUE;
 }
+
