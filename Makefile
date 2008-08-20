@@ -137,7 +137,7 @@ test_rbtree: test_rbtree.o $(OUTPUT_A)
 	$(CC) -o $@ $< $(OUTPUT_A)
 
 test_request_parser: test_request_parser.o $(OUTPUT_A)
-	$(CC) -lefence -o $@ $< $(OUTPUT_A)
+	$(CC) -o $@ $< $(OUTPUT_A)
 
 .PHONY: test
 
