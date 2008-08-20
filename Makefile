@@ -1,133 +1,43 @@
-#based on the makefiles in rubinius 
+# libEbb - web server library
+# See README file for copyright and license details.
 
-# Set this such that $(LIBEVDIR)/lib include libev.so and 
-# $(LIBEVDIR)/include has ev.h
-LIBEVDIR=$(HOME)/local/libev
+include config.mk
 
-# Respect the environment
-ifeq ($(CC),)
-  CC=gcc
-endif
-
-UNAME=$(shell uname)
-CPU=$(shell uname -p)
-MARCH=$(shell uname -m)
-OSVER=$(shell uname -r)
-
-WARNINGS = -Wall
-DEBUG = -g -ggdb3
-
-CFLAGS = -I. $(WARNINGS) $(DEBUG)
-
-
-
-COMP=$(CC)
-ifeq ($(UNAME),Darwin)
-  LDOPT=-dynamiclib 
-  SUFFIX=dylib
-  SONAME=-current_version $(VERSION) -compatibility_version $(VERSION)
-else
-  LDOPT=-shared
-  SUFFIX=so
-  ifneq ($(UNAME),SunOS)
-    SONAME=-Wl,-soname,libptr_array-$(VERSION).$(SUFFIX)
-  endif
-endif
-
-BIN_RPATH=
-LINKER=$(CC) $(LDOPT)
-RANLIB = ranlib
-
-ifndef VERBOSE
-  COMP=@echo CC $@;$(CC)
-  LINKER=@echo LINK $@;$(CC) $(LDOPT)
-endif
-
-VERSION=0.1
+SRC = ebb.c ebb_request_parser.c rbtree.c
+OBJ = ${SRC:.c=.o}
 
 NAME=libebb
 OUTPUT_LIB=$(NAME).$(VERSION).$(SUFFIX)
 OUTPUT_A=$(NAME).a
 
-ifeq ($(UNAME),Darwin)
-  SINGLE_MODULE=-Wl,-single_module
-  ifeq ($(OSVER),9.1.0)
-    export MACOSX_DEPLOYMENT_TARGET=10.5
-  else
-    export MACOSX_DEPLOYMENT_TARGET=10.4
-  endif
-else
-  SINGLE_MODULE=
-endif
+LINKER=$(CC) $(LDOPT)
 
-ifeq ($(UNAME),SunOS)
-  CFLAGS+=-D__C99FEATURES__
-endif
+all: options $(OUTPUT_LIB) $(OUTPUT_A)
 
-ifdef DEV
-  OPTIMIZATIONS=
-else
-  INLINE_OPTS=
-  OPTIMIZATIONS=-O2 -funroll-loops -finline-functions $(INLINE_OPTS)
-endif
+options:
+	@echo libebb build options:
+	@echo "CFLAGS   = ${CFLAGS}"
+	@echo "LDFLAGS  = ${LDFLAGS}"
+	@echo "LDOPT    = ${LDOPT}"
+	@echo "SUFFIX   = ${SUFFIX}"
+	@echo "SONAME   = ${SONAME}"
+	@echo "CC       = ${CC}"
 
-ifeq ($(CPU), powerpc)
-  OPTIMIZATIONS+=-falign-loops=16
-endif
+$(OUTPUT_LIB): $(OBJ) 
+	$(LINKER) -o $(OUTPUT_LIB) $(OBJ) $(SONAME) $(LIBS)
 
-CFLAGS += -fPIC $(CPPFLAGS)
-DEPS = ebb.h ebb_request_parser.h rbtree.h
-LIBS = 
-
-GNUTLS_EXISTS = $(shell pkg-config --silence-errors --exists gnutls || echo "no")
-ifeq ($(GNUTLS_EXISTS),no)
-	USING_GNUTLS = "no"
-else
-	CFLAGS += $(shell pkg-config --cflags gnutls) -DHAVE_GNUTLS=1
-	LIBS += $(shell pkg-config --libs gnutls)
-	USING_GNUTLS = "yes"
-endif
-CFLAGS += -I$(LIBEVDIR)/include
-LIBS += -L$(LIBEVDIR)/lib -lev
-
-SOURCES=ebb.c ebb_request_parser.c rbtree.c
-OBJS=$(SOURCES:.c=.o)
-
-%.o: %.c
-	$(COMP) $(CFLAGS) $(OPTIMIZATIONS) -c $< -o $@
-
-%.o: %.S
-	$(COMP) $(CFLAGS) $(OPTIMIZATIONS) -c $< -o $@
-
-.%.d:  %.c  $(DEPS)
-	@echo DEP $<
-	@set -e; rm -f $@; \
-	$(CC) -MM $(CPPFLAGS) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
-
-library: $(OUTPUT_LIB) $(OUTPUT_A)
-	@echo "using GnuTLS... ${USING_GNUTLS}"
-
-$(OUTPUT_LIB): $(DEPS) $(OBJS) 
-	$(LINKER) -o $(OUTPUT_LIB) $(OBJS) $(SONAME) $(LIBS)
-
-$(OUTPUT_A): $(DEPS) $(OBJS)
-	$(AR) cru $(OUTPUT_A) $(OBJS)
+$(OUTPUT_A): $(OBJ)
+	$(AR) cru $(OUTPUT_A) $(OBJ)
 	$(RANLIB) $(OUTPUT_A)
 
-.PHONY: library
+.c.o:
+	@echo CC $<
+	@${CC} -c ${CFLAGS} $<
+
+${OBJ}: ebb.h ebb_request_parser.h rbtree.h config.mk
 
 ebb_request_parser.c: ebb_request_parser.rl
 	ragel -s -G2 $< -o $@
-
-clean:
-	rm -f *.o *.lo *.la *.so *.dylib *.a test_rbtree test_request_parser examples/hello_world
-
-clobber: clean
-	rm -f ebb_request_parser.c
-
-.PHONY: clean clobber
 
 test: test_request_parser test_rbtree
 	time ./test_request_parser
@@ -139,28 +49,42 @@ test_rbtree: test_rbtree.o $(OUTPUT_A)
 test_request_parser: test_request_parser.o $(OUTPUT_A)
 	$(CC) -o $@ $< $(OUTPUT_A)
 
-.PHONY: test
-
 examples: examples/hello_world
 
 examples/hello_world: examples/hello_world.o $(OUTPUT_A) 
 	$(CC) $(LIBS) $(CFLAGS) -lev -o $@ $< $(OUTPUT_A)
 
-.PHONY: examples
+clean:
+	@echo cleaning
+	@rm -f ${OBJ} libebb-${VERSION}.tar.gz test_rbtree test_request_parser examples/hello_world
 
-tags: *.c *.h *.rl examples/*.c
-	ctags $^
+clobber: clean
+	@echo clobbering
+	@rm -f ebb_request_parser.c
 
-install: $(OUTPUT_A)
-	install -d -m755 ${prefix}/lib
-	install -d -m755 ${prefix}/include
-	install -m644 $(OUTPUT_A) ${prefix}/lib 
-	install -m644 ebb.h ebb_request_parser.h ${prefix}/include 
+dist: clean
+	@echo creating dist tarball
+	@mkdir -p dwm-${VERSION}
+	@cp -R LICENSE Makefile README config.def.h config.mk \
+		dwm.1 ${SRC} dwm-${VERSION}
+	@tar -cf dwm-${VERSION}.tar dwm-${VERSION}
+	@gzip dwm-${VERSION}.tar
+	@rm -rf dwm-${VERSION}
 
-upload_website:
-	scp -r doc/index.html doc/icon.png rydahl@tinyclouds.org:~/web/public/libebb
+install: all
+	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
+	@mkdir -p ${DESTDIR}${PREFIX}/bin
+	@cp -f dwm ${DESTDIR}${PREFIX}/bin
+	@chmod 755 ${DESTDIR}${PREFIX}/bin/dwm
+	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
+	@mkdir -p ${DESTDIR}${MANPREFIX}/man1
+	@sed "s/VERSION/${VERSION}/g" < dwm.1 > ${DESTDIR}${MANPREFIX}/man1/dwm.1
+	@chmod 644 ${DESTDIR}${MANPREFIX}/man1/dwm.1
 
+uninstall:
+	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
+	@rm -f ${DESTDIR}${PREFIX}/bin/dwm
+	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
+	@rm -f ${DESTDIR}${MANPREFIX}/man1/dwm.1
 
-ifneq ($(MAKECMDGOALS),clean)
--include $(SOURCES:%.c=.%.d)
-endif
+.PHONY: all options clean clobber dist install uninstall test examples
