@@ -17,26 +17,20 @@ GNUTLSINC   = /usr/include
 GNUTLSLIBS  = -L${GNUTLSLIB} -lgnutls
 GNUTLSFLAGS = -DHAVE_GNUTLS
 
-# libeio, comment if you don't want it (necessary for sendfile)
-EIOLIB   = $(HOME)/local/libeio/lib
-EIOINC   = $(HOME)/local/libeio/include
-EIOLIBS  = -L${EIOLIB} -leio
-EIOFLAGS = -DHAVE_EIO
-
 # includes and libs
-INCS = -I. -I/usr/include -I${EVINC} -I${GNUTLSINC} -I${EIOINC} 
-LIBS = -L/usr/lib -lev -L${EVLIB} ${GNUTLSLIBS} ${EIOLIBS}
+INCS = -I. -I/usr/include -I${EVINC} -I${GNUTLSINC}
+LIBS = -L/usr/lib -lev -L${EVLIB} ${GNUTLSLIBS}
 
 # flags
-CPPFLAGS = -DVERSION=\"${VERSION}\" ${GNUTLSFLAGS} ${EIOFLAGS}
-CFLAGS   = -Wall ${INCS} ${CPPFLAGS}
+CPPFLAGS = -DVERSION=\"${VERSION}\" ${GNUTLSFLAGS}
+CFLAGS   = -Wall ${INCS} ${CPPFLAGS} -fPIC
 LDFLAGS  = -s ${LIBS}
 LDOPT    = -shared
 SUFFIX   = so
 SONAME   = -Wl,-soname,libptr_array-$(VERSION).$(SUFFIX)
 
 # Solaris
-#CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\"
+#CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\" -fPIC
 #LDFLAGS = ${LIBS}
 #SONAME = 
 
