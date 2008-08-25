@@ -77,7 +77,7 @@ ebb_connection* new_connection(ebb_server *server, struct sockaddr_in *addr)
   connection->new_request = new_request;
   connection->on_close = on_close;
   
-  //printf("connection: %d\n", c++);
+  printf("connection: %d\n", c++);
   return connection;
 }
 

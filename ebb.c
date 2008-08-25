@@ -475,7 +475,6 @@ on_connection(struct ev_loop *loop, ev_io *watcher, int revents)
     ebb_server_unlisten(server);
     return;
   }
-
   
   struct sockaddr_in addr; // connector's address information
   socklen_t addr_len = sizeof(addr); 

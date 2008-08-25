@@ -6,8 +6,9 @@ include config.mk
 SRC = ebb.c ebb_request_parser.c rbtree.c
 OBJ = ${SRC:.c=.o}
 
+VERSION = 0.1
 NAME=libebb
-OUTPUT_LIB=$(NAME).$(VERSION).$(SUFFIX)
+OUTPUT_LIB=$(NAME).$(SUFFIX).$(VERSION)
 OUTPUT_A=$(NAME).a
 
 LINKER=$(CC) $(LDOPT)
@@ -49,26 +50,31 @@ test: test_request_parser test_rbtree
 	./test_rbtree
 
 test_rbtree: test_rbtree.o $(OUTPUT_A)
-	$(CC) -o $@ $< $(OUTPUT_A)
+	@echo BUILDING test_rbtree
+	@$(CC) -o $@ $< $(OUTPUT_A)
 
 test_request_parser: test_request_parser.o $(OUTPUT_A)
-	$(CC) -o $@ $< $(OUTPUT_A)
+	@echo BUILDING test_request_parser
+	@$(CC) -o $@ $< $(OUTPUT_A)
 
 examples: examples/hello_world
 
-examples/hello_world: examples/hello_world.o $(OUTPUT_A) 
-	$(CC) $(LIBS) $(CFLAGS) -lev -o $@ $< $(OUTPUT_A)
+examples/hello_world: examples/hello_world.c $(OUTPUT_A) 
+	@echo BUILDING examples/hello_world
+	@$(CC) -I. $(LIBS) $(CFLAGS) -lev -o $@ $^
 
 clean:
-	@echo cleaning
-	@rm -f ${OBJ} $(OUTPUT_A) $(OUTPUT_LIB) libebb-${VERSION}.tar.gz test_rbtree test_request_parser examples/hello_world
+	@echo CLEANING
+	@rm -f ${OBJ} $(OUTPUT_A) $(OUTPUT_LIB) libebb-${VERSION}.tar.gz 
+	@rm -f test_rbtree test_request_parser 
+	@rm -f examples/hello_world examples/hello_world.o
 
 clobber: clean
-	@echo clobbering
+	@echo CLOBBERING
 	@rm -f ebb_request_parser.c
 
 dist: clean
-	@echo creating dist tarball
+	@echo CREATING dist tarball
 	@mkdir -p dwm-${VERSION}
 	@cp -R LICENSE Makefile README config.def.h config.mk \
 		dwm.1 ${SRC} dwm-${VERSION}
@@ -76,20 +82,21 @@ dist: clean
 	@gzip dwm-${VERSION}.tar
 	@rm -rf dwm-${VERSION}
 
-install: all
-	@echo installing executable file to ${DESTDIR}${PREFIX}/bin
-	@mkdir -p ${DESTDIR}${PREFIX}/bin
-	@cp -f dwm ${DESTDIR}${PREFIX}/bin
-	@chmod 755 ${DESTDIR}${PREFIX}/bin/dwm
-	@echo installing manual page to ${DESTDIR}${MANPREFIX}/man1
-	@mkdir -p ${DESTDIR}${MANPREFIX}/man1
-	@sed "s/VERSION/${VERSION}/g" < dwm.1 > ${DESTDIR}${MANPREFIX}/man1/dwm.1
-	@chmod 644 ${DESTDIR}${MANPREFIX}/man1/dwm.1
+install: $(OUTPUT_LIB) $(OUTPUT_A)
+	@echo INSTALLING ${OUTPUT_A} and ${OUTPUT_LIB} to ${PREFIX}/lib
+	install -d -m755 ${PREFIX}/lib
+	install -d -m755 ${PREFIX}/include
+	install -m644 ${OUTPUT_A} ${PREFIX}/lib
+	install -m755 ${OUTPUT_LIB} ${PREFIX}/lib
+	ln -sfn $(PREFIX)/lib/$(OUTPUT_LIB) $(PREFIX)/lib/$(NAME).so
+	@echo INSTALLING headers to ${PREFIX}/include
+	install -m644 ebb.h ebb_request_parser.h ${PREFIX}/include 
 
 uninstall:
-	@echo removing executable file from ${DESTDIR}${PREFIX}/bin
-	@rm -f ${DESTDIR}${PREFIX}/bin/dwm
-	@echo removing manual page from ${DESTDIR}${MANPREFIX}/man1
-	@rm -f ${DESTDIR}${MANPREFIX}/man1/dwm.1
+	@echo REMOVING so from ${PREFIX}/lib
+	rm -f ${PREFIX}/lib/${NAME}.*
+	@echo REMOVING headers from ${PREFIX}/include
+	rm -f ${PREFIX}/include/ebb.h
+	rm -f ${PREFIX}/include/ebb_request_parser.h
 
 .PHONY: all options clean clobber dist install uninstall test examples

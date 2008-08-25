@@ -1,15 +1,9 @@
-# libebb version
-VERSION = 0.1
-
-# Customize below to fit your system
-
-# paths
-PREFIX = $(HOME)/local
-MANPREFIX = ${PREFIX}/share/man
+PREFIX = $(HOME)/local/libebb
 
 # libev
-EVINC = $(HOME)/local/libev/include
-EVLIB = $(HOME)/local/libev/lib
+EVINC  = $(HOME)/local/libev/include
+EVLIB  = $(HOME)/local/libev/lib
+EVLIBS = -L${EVLIB} -lev
 
 # GnuTLS, comment if you don't want it (necessary for HTTPS)
 GNUTLSLIB   = /usr/lib
@@ -18,26 +12,26 @@ GNUTLSLIBS  = -L${GNUTLSLIB} -lgnutls
 GNUTLSFLAGS = -DHAVE_GNUTLS
 
 # includes and libs
-INCS = -I. -I/usr/include -I${EVINC} -I${GNUTLSINC}
-LIBS = -L/usr/lib -lev -L${EVLIB} ${GNUTLSLIBS}
+INCS = -I${EVINC} -I${GNUTLSINC}
+LIBS = ${EVLIBS} ${GNUTLSLIBS}
 
 # flags
-CPPFLAGS = -DVERSION=\"${VERSION}\" ${GNUTLSFLAGS}
-CFLAGS   = -Wall ${INCS} ${CPPFLAGS} -fPIC
+CPPFLAGS = -DVERSION=\"$(VERSION)\" ${GNUTLSFLAGS}
+CFLAGS   = -g -Wall ${INCS} ${CPPFLAGS} -fPIC
 LDFLAGS  = -s ${LIBS}
 LDOPT    = -shared
 SUFFIX   = so
-SONAME   = -Wl,-soname,libptr_array-$(VERSION).$(SUFFIX)
+SONAME   = -Wl,-soname,$(OUTPUT_LIB)
 
 # Solaris
-#CFLAGS = -fast ${INCS} -DVERSION=\"${VERSION}\" -fPIC
+#CFLAGS  = -fast ${INCS} -DVERSION=\"$(VERSION)\" -fPIC
 #LDFLAGS = ${LIBS}
-#SONAME = 
+#SONAME  = 
 
 # Darwin
-# LDOPT=-dynamiclib 
-# SUFFIX=dylib
-# SONAME=-current_version $(VERSION) -compatibility_version $(VERSION)
+# LDOPT  = -dynamiclib 
+# SUFFIX = dylib
+# SONAME = -current_version $(VERSION) -compatibility_version $(VERSION)
 
 # compiler and linker
 CC = cc
