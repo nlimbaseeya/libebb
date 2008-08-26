@@ -43,12 +43,9 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 #define FALSE 0
 #define MIN(a,b) (a < b ? a : b)
 
-
 #define REMAINING (pe - p)
 #define CURRENT (parser->current_request)
 #define CONTENT_LENGTH (parser->current_request->content_length)
-
-#define LEN(FROM) (p - parser->FROM##_mark)
 #define CALLBACK(FOR)                               \
   if(parser->FOR##_mark && CURRENT->on_##FOR) {     \
     CURRENT->on_##FOR( CURRENT                      \
@@ -369,9 +366,7 @@ size_t ebb_request_parser_execute(ebb_request_parser *parser, const char *buffer
   pe = buffer+len;
 
   if(0 < parser->chunk_size && parser->eating) {
-    /*
-     * eat body
-     */
+    /* eat body */
     size_t eat = MIN(len, parser->chunk_size);
     skip_body(&p, parser, eat);
   } 

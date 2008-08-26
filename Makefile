@@ -99,4 +99,7 @@ uninstall:
 	rm -f ${PREFIX}/include/ebb.h
 	rm -f ${PREFIX}/include/ebb_request_parser.h
 
-.PHONY: all options clean clobber dist install uninstall test examples
+upload_website:
+	scp -r doc/index.html doc/icon.png rydahl@tinyclouds.org:~/web/public/libebb
+
+.PHONY: all options clean clobber dist install uninstall test examples upload_website
