@@ -30,9 +30,19 @@
 #include <stdio.h>
 #include <assert.h>
 
+static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     ,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     ,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     , 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1
+                     ,-1,10,11,12,13,14,15,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     ,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     ,-1,10,11,12,13,14,15,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     ,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+                     };
 #define TRUE 1
 #define FALSE 0
 #define MIN(a,b) (a < b ? a : b)
+
 
 #define REMAINING (pe - p)
 #define CURRENT (parser->current_request)
@@ -163,15 +173,7 @@
 
   action add_to_chunk_size {
     parser->chunk_size *= 16;
-    /* XXX: this can be optimized slightly  */
-    if( 'A' <= *p && *p <= 'F') 
-      parser->chunk_size += *p - 'A' + 10;
-    else if( 'a' <= *p && *p <= 'f') 
-      parser->chunk_size += *p - 'a' + 10;
-    else if( '0' <= *p && *p <= '9') 
-      parser->chunk_size += *p - '0';
-    else  
-      assert(0 && "bad hex char");
+    parser->chunk_size += unhex[(int)*p];
   }
 
   action skip_chunk_data {
