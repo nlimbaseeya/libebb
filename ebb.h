@@ -1,6 +1,6 @@
 /* This file is part of the libebb web server library
  *
- * Copyright (c) 2008 Ryan Dahl (ry@tinyclouds.org)
+ * Copyright (c) 2008 Ryan Dahl (ry@ndahl.us)
  * All rights reserved.
  * 
  * Permission is hereby granted, free of charge, to any person obtaining

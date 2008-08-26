@@ -1,6 +1,6 @@
 /* This file is part of the libebb web server library
  *
- * Copyright (c) 2008 Ryan Dahl (ry@tinyclouds.org)
+ * Copyright (c) 2008 Ryan Dahl (ry@ndahl.us)
  * All rights reserved.
  *
  * This parser is based on code from Zed Shaw's Mongrel.
