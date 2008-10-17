@@ -1,4 +1,4 @@
-/* This file is part of the libebb web server library
+/* This file is part of libebb.
  *
  * Copyright (c) 2008 Ryan Dahl (ry@ndahl.us)
  * All rights reserved.
@@ -40,19 +40,10 @@
 #define EBB_AGAIN 0
 #define EBB_STOP 1
 
-typedef struct ebb_buf        ebb_buf;
 typedef struct ebb_server     ebb_server;
 typedef struct ebb_connection ebb_connection;
 typedef void (*ebb_after_write_cb) (ebb_connection *connection); 
 typedef void (*ebb_connection_cb)(ebb_connection *connection, void *data);
-
-struct ebb_buf {
-  /* all public */
-  char *base;
-  size_t len;
-  void (*on_release)(ebb_buf*);
-  void *data;
-};
 
 struct ebb_server {
   int fd;                                       /* ro */
@@ -103,13 +94,6 @@ struct ebb_connection {
   /* Public */
 
   ebb_request* (*new_request) (ebb_connection*); 
-
-  /* new_buf is called each time there is data from a client connection to
-   * be read. See on_readable() in server.c to see exactly how this is used.
-   * It is optional. If not supplied data will be read into a statically 
-   * allocated buffer.
-   */
-  ebb_buf* (*new_buf) (ebb_connection*); 
 
   /* Returns EBB_STOP or EBB_AGAIN. NULL by default.  */
   int (*on_timeout) (ebb_connection*); 

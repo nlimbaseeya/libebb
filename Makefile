@@ -3,6 +3,7 @@
 
 include config.mk
 
+DEP = ebb.h ebb_request_parser.h rbtree.h
 SRC = ebb.c ebb_request_parser.c rbtree.c
 OBJ = ${SRC:.c=.o}
 
@@ -39,7 +40,7 @@ $(OUTPUT_A): $(OBJ)
 	@echo CC $<
 	@${CC} -c ${CFLAGS} $<
 
-${OBJ}: ebb.h ebb_request_parser.h rbtree.h config.mk
+${OBJ}: ${DEP}
 
 ebb_request_parser.c: ebb_request_parser.rl
 	@echo RAGEL $<
@@ -51,11 +52,11 @@ test: test_request_parser test_rbtree
 
 test_rbtree: test_rbtree.o $(OUTPUT_A)
 	@echo BUILDING test_rbtree
-	@$(CC) -o $@ $< $(OUTPUT_A)
+	@$(CC) $(CFLAGS) -o $@ $< $(OUTPUT_A)
 
 test_request_parser: test_request_parser.o $(OUTPUT_A)
 	@echo BUILDING test_request_parser
-	@$(CC) -o $@ $< $(OUTPUT_A)
+	@$(CC) $(CFLAGS) -o $@ $< $(OUTPUT_A)
 
 examples: examples/hello_world
 
@@ -73,14 +74,14 @@ clobber: clean
 	@echo CLOBBERING
 	@rm -f ebb_request_parser.c
 
-dist: clean
+dist: clean $(SRC)
 	@echo CREATING dist tarball
-	@mkdir -p dwm-${VERSION}
-	@cp -R LICENSE Makefile README config.def.h config.mk \
-		dwm.1 ${SRC} dwm-${VERSION}
-	@tar -cf dwm-${VERSION}.tar dwm-${VERSION}
-	@gzip dwm-${VERSION}.tar
-	@rm -rf dwm-${VERSION}
+	@mkdir -p ${NAME}-${VERSION}
+	@cp -R doc examples LICENSE Makefile README config.mk \
+		ebb_request_parser.rl ${SRC} ${DEP} ${NAME}-${VERSION}
+	@tar -cf ${NAME}-${VERSION}.tar ${NAME}-${VERSION}
+	@gzip ${NAME}-${VERSION}.tar
+	@rm -rf ${NAME}-${VERSION}
 
 install: $(OUTPUT_LIB) $(OUTPUT_A)
 	@echo INSTALLING ${OUTPUT_A} and ${OUTPUT_LIB} to ${PREFIX}/lib

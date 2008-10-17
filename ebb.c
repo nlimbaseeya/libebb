@@ -1,4 +1,4 @@
-/* This file is part of the libebb web server library
+/* This file is part of libebb.
  *
  * Copyright (c) 2008 Ryan Dahl (ry@ndahl.us)
  * All rights reserved.
@@ -277,13 +277,10 @@ static void
 on_readable(struct ev_loop *loop, ev_io *watcher, int revents)
 {
   ebb_connection *connection = watcher->data;
-  char base[TCP_MAXWIN];
-  char *recv_buffer = base;
-  size_t recv_buffer_size = TCP_MAXWIN;
+  char recv_buffer[TCP_MAXWIN];
   ssize_t recved;
 
   //printf("on_readable\n");
-
   // TODO -- why is this broken?
   //assert(ev_is_active(&connection->timeout_watcher));
   assert(watcher == &connection->read_watcher);
@@ -293,21 +290,13 @@ on_readable(struct ev_loop *loop, ev_io *watcher, int revents)
     goto error;
   }
 
-  ebb_buf *buf = NULL;
-  if(connection->new_buf) {
-    buf = connection->new_buf(connection);
-    if(buf == NULL) return; 
-    recv_buffer = buf->base;
-    recv_buffer_size = buf->len;
-  }
-
 #ifdef HAVE_GNUTLS
   assert(!ev_is_active(&connection->handshake_watcher));
 
   if(connection->server->secure) {
     recved = gnutls_record_recv( connection->session
                                , recv_buffer
-                               , recv_buffer_size
+                               , TCP_MAXWIN
                                );
     if(recved <= 0) {
       if(gnutls_error_is_fatal(recved)) goto error;
@@ -319,7 +308,7 @@ on_readable(struct ev_loop *loop, ev_io *watcher, int revents)
   } else {
 #endif /* HAVE_GNUTLS */
 
-    recved = recv(connection->fd, recv_buffer, recv_buffer_size, 0);
+    recved = recv(connection->fd, recv_buffer, TCP_MAXWIN, 0);
     if(recved < 0) goto error;
     if(recved == 0) return;
 
@@ -333,10 +322,6 @@ on_readable(struct ev_loop *loop, ev_io *watcher, int revents)
 
   /* parse error? just drop the client. screw the 400 response */
   if(ebb_request_parser_has_error(&connection->parser)) goto error;
-
-  if(buf && buf->on_release)
-    buf->on_release(buf);
-
   return;
 error:
   ebb_connection_schedule_close(connection);
@@ -756,7 +741,6 @@ ebb_connection_init(ebb_connection *connection)
   ev_timer_init(&connection->timeout_watcher, on_timeout, EBB_DEFAULT_TIMEOUT, 0.);
   connection->timeout_watcher.data = connection;  
 
-  connection->new_buf = NULL;
   connection->new_request = NULL;
   connection->on_timeout = NULL;
   connection->on_close = NULL;
