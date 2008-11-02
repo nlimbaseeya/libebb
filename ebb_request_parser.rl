@@ -77,21 +77,6 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
   action mark_request_path   { parser->path_mark           = p; }
   action mark_request_uri    { parser->uri_mark            = p; }
 
-  action method_copy         { CURRENT->method = EBB_COPY;      }
-  action method_delete       { CURRENT->method = EBB_DELETE;    }
-  action method_get          { CURRENT->method = EBB_GET;       }
-  action method_head         { CURRENT->method = EBB_HEAD;      }
-  action method_lock         { CURRENT->method = EBB_LOCK;      }
-  action method_mkcol        { CURRENT->method = EBB_MKCOL;     }
-  action method_move         { CURRENT->method = EBB_MOVE;      }
-  action method_options      { CURRENT->method = EBB_OPTIONS;   }
-  action method_post         { CURRENT->method = EBB_POST;      }
-  action method_propfind     { CURRENT->method = EBB_PROPFIND;  }
-  action method_proppatch    { CURRENT->method = EBB_PROPPATCH; }
-  action method_put          { CURRENT->method = EBB_PUT;       }
-  action method_trace        { CURRENT->method = EBB_TRACE;     }
-  action method_unlock       { CURRENT->method = EBB_UNLOCK;    }
-
   action write_field { 
     HEADER_CALLBACK(header_field);
     parser->header_field_mark = NULL;
@@ -240,20 +225,20 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
 #  headers
 
-  Method = ( "COPY"      %method_copy
-           | "DELETE"    %method_delete
-           | "GET"       %method_get
-           | "HEAD"      %method_head
-           | "LOCK"      %method_lock
-           | "MKCOL"     %method_mkcol
-           | "MOVE"      %method_move
-           | "OPTIONS"   %method_options
-           | "POST"      %method_post
-           | "PROPFIND"  %method_propfind
-           | "PROPPATCH" %method_proppatch
-           | "PUT"       %method_put
-           | "TRACE"     %method_trace
-           | "UNLOCK"    %method_unlock
+  Method = ( "COPY"      %{ CURRENT->method = EBB_COPY;      }
+           | "DELETE"    %{ CURRENT->method = EBB_DELETE;    }
+           | "GET"       %{ CURRENT->method = EBB_GET;       }
+           | "HEAD"      %{ CURRENT->method = EBB_HEAD;      }
+           | "LOCK"      %{ CURRENT->method = EBB_LOCK;      }
+           | "MKCOL"     %{ CURRENT->method = EBB_MKCOL;     }
+           | "MOVE"      %{ CURRENT->method = EBB_MOVE;      }
+           | "OPTIONS"   %{ CURRENT->method = EBB_OPTIONS;   }
+           | "POST"      %{ CURRENT->method = EBB_POST;      }
+           | "PROPFIND"  %{ CURRENT->method = EBB_PROPFIND;  }
+           | "PROPPATCH" %{ CURRENT->method = EBB_PROPPATCH; }
+           | "PUT"       %{ CURRENT->method = EBB_PUT;       }
+           | "TRACE"     %{ CURRENT->method = EBB_TRACE;     }
+           | "UNLOCK"    %{ CURRENT->method = EBB_UNLOCK;    }
            ); # Not allowing extension methods
 
   HTTP_Version = "HTTP/" digit+ $version_major "." digit+ $version_minor;
