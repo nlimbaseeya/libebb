@@ -1,6 +1,3 @@
-# libEbb - web server library
-# See README file for copyright and license details.
-
 include config.mk
 
 DEP = ebb.h ebb_request_parser.h rbtree.h

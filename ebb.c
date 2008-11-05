@@ -309,8 +309,7 @@ on_readable(struct ev_loop *loop, ev_io *watcher, int revents)
 #endif /* HAVE_GNUTLS */
 
     recved = recv(connection->fd, recv_buffer, TCP_MAXWIN, 0);
-    if(recved < 0) goto error;
-    if(recved == 0) return;
+    if(recved <= 0) goto error;
 
 #ifdef HAVE_GNUTLS
   }
