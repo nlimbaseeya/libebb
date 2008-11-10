@@ -343,6 +343,9 @@ on_writable(struct ev_loop *loop, ev_io *watcher, int revents)
   //assert(ev_is_active(&connection->timeout_watcher));
   assert(watcher == &connection->write_watcher);
 
+  if(connection->to_write == 0)
+    goto stop_writing;
+
 #ifdef HAVE_GNUTLS
   assert(!ev_is_active(&connection->handshake_watcher));
 
@@ -351,7 +354,7 @@ on_writable(struct ev_loop *loop, ev_io *watcher, int revents)
                              , connection->to_write + connection->written
                              , connection->to_write_len - connection->written
                              ); 
-    if(sent <= 0) {
+    if(sent < 0) {
       if(gnutls_error_is_fatal(sent)) goto error;
       if( (sent == GNUTLS_E_INTERRUPTED || sent == GNUTLS_E_AGAIN)
        && GNUTLS_NEED_READ
@@ -377,12 +380,15 @@ on_writable(struct ev_loop *loop, ev_io *watcher, int revents)
   connection->written += sent;
 
   if(connection->written == connection->to_write_len) {
-    ev_io_stop(loop, watcher);
-    connection->to_write = NULL;
-
-    if(connection->after_write_cb)
-      connection->after_write_cb(connection);
+    goto stop_writing;
   }
+  return;
+stop_writing:
+  ev_io_stop(loop, watcher);
+  connection->to_write = NULL;
+
+  if(connection->after_write_cb)
+    connection->after_write_cb(connection);
   return;
 error:
   error("close connection on write.");
