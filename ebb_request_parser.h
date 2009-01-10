@@ -37,22 +37,24 @@ typedef void (*ebb_element_cb)(ebb_request*, const char *at, size_t length);
 
 #define EBB_MAX_MULTIPART_BOUNDARY_LEN 20
 
+/* HTTP Methods */
+#define EBB_COPY       0x00000001
+#define EBB_DELETE     0x00000002
+#define EBB_GET        0x00000004
+#define EBB_HEAD       0x00000008
+#define EBB_LOCK       0x00000010
+#define EBB_MKCOL      0x00000020
+#define EBB_MOVE       0x00000040
+#define EBB_OPTIONS    0x00000080
+#define EBB_POST       0x00000100
+#define EBB_PROPFIND   0x00000200
+#define EBB_PROPPATCH  0x00000400
+#define EBB_PUT        0x00000800
+#define EBB_TRACE      0x00001000
+#define EBB_UNLOCK     0x00002000
+
 struct ebb_request {
-  enum { EBB_COPY
-       , EBB_DELETE
-       , EBB_GET
-       , EBB_HEAD
-       , EBB_LOCK
-       , EBB_MKCOL
-       , EBB_MOVE
-       , EBB_OPTIONS
-       , EBB_POST
-       , EBB_PROPFIND
-       , EBB_PROPPATCH
-       , EBB_PUT
-       , EBB_TRACE
-       , EBB_UNLOCK
-       } method;
+  int method;
   
   enum { EBB_IDENTITY
        , EBB_CHUNKED
