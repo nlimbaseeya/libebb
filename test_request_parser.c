@@ -424,6 +424,7 @@ ebb_request* new_request ()
   r->on_fragment = fragment_cb;
   r->on_query_string = query_string_cb;
   r->on_body = body_handler;
+  r->on_headers_complete = NULL;
 
   r->data = &requests[num_requests];
  // printf("new request %d\n", num_requests);

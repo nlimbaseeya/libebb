@@ -118,14 +118,6 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
   action set_keep_alive { CURRENT->keep_alive = TRUE; }
   action set_not_keep_alive { CURRENT->keep_alive = FALSE; }
 
-  action multipart_boundary {
-    if(CURRENT->multipart_boundary_len == EBB_MAX_MULTIPART_BOUNDARY_LEN) {
-      cs = -1;
-      fbreak;
-    }
-    CURRENT->multipart_boundary[CURRENT->multipart_boundary_len++] = *p;
-  } 
-
   action expect_continue {
     CURRENT->expect_continue = TRUE;
   }
@@ -268,10 +260,6 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
                | "close"i %set_not_keep_alive
                )
              )
-         # | ("Content-Type"i hsep 
-         #    "multipart/form-data" any* 
-         #    "boundary=" quote token+ $multipart_boundary quote
-         #   )
            | ("Transfer-Encoding"i %use_chunked_encoding hsep "identity" %use_identity_encoding)
          # | ("Expect"i hsep "100-continue"i %expect_continue)
          # | ("Trailer"i hsep field_value %trailer)
@@ -398,7 +386,6 @@ void ebb_request_init(ebb_request *request)
   request->version_minor = 0;
   request->number_of_headers = 0;
   request->transfer_encoding = EBB_IDENTITY;
-  request->multipart_boundary_len = 0;
   request->keep_alive = -1;
 
   request->on_complete = NULL;

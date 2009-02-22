@@ -27,6 +27,10 @@
  */
 #ifndef ebb_request_parser_h
 #define ebb_request_parser_h
+#ifdef __cplusplus
+extern "C" {
+#endif 
+
 
 #include <sys/types.h> 
 
@@ -53,23 +57,20 @@ typedef void (*ebb_element_cb)(ebb_request*, const char *at, size_t length);
 #define EBB_TRACE      0x00001000
 #define EBB_UNLOCK     0x00002000
 
+/* Transfer Encodings */
+#define EBB_IDENTITY   0x00000001
+#define EBB_CHUNKED    0x00000002
+
 struct ebb_request {
   int method;
-  
-  enum { EBB_IDENTITY
-       , EBB_CHUNKED
-       } transfer_encoding;          /* ro */
-
-  size_t content_length;             /* ro - 0 if unknown */
-  size_t body_read;                  /* ro */
+  int transfer_encoding;         /* ro */
   int expect_continue;               /* ro */
   unsigned int version_major;        /* ro */
   unsigned int version_minor;        /* ro */
   int number_of_headers;             /* ro */
   int keep_alive;                    /* private - use ebb_request_should_keep_alive */
-
-  char multipart_boundary[EBB_MAX_MULTIPART_BOUNDARY_LEN]; /* ro */
-  unsigned int multipart_boundary_len; /* ro */
+  size_t content_length;             /* ro - 0 if unknown */
+  size_t body_read;                  /* ro */
 
   /* Public  - ordered list of callbacks */
   ebb_element_cb on_path;
@@ -110,4 +111,7 @@ int ebb_request_should_keep_alive(ebb_request *request);
 #define ebb_request_has_body(request) \
   (request->transfer_encoding == EBB_CHUNKED || request->content_length > 0 )
 
+#ifdef __cplusplus
+}
+#endif 
 #endif
