@@ -522,7 +522,7 @@ on_connection(struct ev_loop *loop, ev_io *watcher, int revents)
   ev_io_set(&connection->read_watcher, connection->fd, EV_READ);
   /* XXX: seperate error watcher? */
 
-  ev_timer_start(loop, &connection->timeout_watcher);
+  ev_timer_again(loop, &connection->timeout_watcher);
 
 #ifdef HAVE_GNUTLS
   if(server->secure) {
@@ -743,7 +743,7 @@ ebb_connection_init(ebb_connection *connection)
   ev_timer_init(&connection->goodbye_watcher, on_goodbye, 0., 0.);
   connection->goodbye_watcher.data = connection;  
 
-  ev_timer_init(&connection->timeout_watcher, on_timeout, EBB_DEFAULT_TIMEOUT, EBB_DEFAULT_TIMEOUT);
+  ev_timer_init(&connection->timeout_watcher, on_timeout, 0., EBB_DEFAULT_TIMEOUT);
   connection->timeout_watcher.data = connection;  
 
   connection->new_request = NULL;
