@@ -47,14 +47,14 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 #define CURRENT (parser->current_request)
 #define CONTENT_LENGTH (parser->current_request->content_length)
 #define CALLBACK(FOR)                               \
-  if(parser->FOR##_mark && CURRENT->on_##FOR) {     \
+  if(CURRENT && parser->FOR##_mark && CURRENT->on_##FOR) {     \
     CURRENT->on_##FOR( CURRENT                      \
                 , parser->FOR##_mark                \
                 , p - parser->FOR##_mark            \
                 );                                  \
  }
 #define HEADER_CALLBACK(FOR)                        \
-  if(parser->FOR##_mark && CURRENT->on_##FOR) {     \
+  if(CURRENT && parser->FOR##_mark && CURRENT->on_##FOR) {     \
     CURRENT->on_##FOR( CURRENT                      \
                 , parser->FOR##_mark                \
                 , p - parser->FOR##_mark            \
@@ -62,7 +62,7 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
                 );                                  \
  }
 #define END_REQUEST                        \
-    if(CURRENT->on_complete)               \
+    if(CURRENT && CURRENT->on_complete)               \
       CURRENT->on_complete(CURRENT);       \
     CURRENT = NULL;
 
@@ -108,18 +108,20 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
   }
 
   action content_length {
-    CURRENT->content_length *= 10;
-    CURRENT->content_length += *p - '0';
+    if(CURRENT){
+      CURRENT->content_length *= 10;
+      CURRENT->content_length += *p - '0';
+    }
   }
 
-  action use_identity_encoding { CURRENT->transfer_encoding = EBB_IDENTITY; }
-  action use_chunked_encoding { CURRENT->transfer_encoding = EBB_CHUNKED; }
+  action use_identity_encoding { if(CURRENT) CURRENT->transfer_encoding = EBB_IDENTITY; }
+  action use_chunked_encoding { if(CURRENT) CURRENT->transfer_encoding = EBB_CHUNKED; }
 
-  action set_keep_alive { CURRENT->keep_alive = TRUE; }
-  action set_not_keep_alive { CURRENT->keep_alive = FALSE; }
+  action set_keep_alive { if(CURRENT) CURRENT->keep_alive = TRUE; }
+  action set_not_keep_alive { if(CURRENT) CURRENT->keep_alive = FALSE; }
 
   action expect_continue {
-    CURRENT->expect_continue = TRUE;
+    if(CURRENT) CURRENT->expect_continue = TRUE;
   }
 
   action trailer {
@@ -127,21 +129,25 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
   }
 
   action version_major {
-    CURRENT->version_major *= 10;
-    CURRENT->version_major += *p - '0';
+    if(CURRENT) {
+      CURRENT->version_major *= 10;
+      CURRENT->version_major += *p - '0';
+    }
   }
 
   action version_minor {
-    CURRENT->version_minor *= 10;
-    CURRENT->version_minor += *p - '0';
+  	if(CURRENT) {
+      CURRENT->version_minor *= 10;
+      CURRENT->version_minor += *p - '0';
+    }
   }
 
   action end_header_line {
-    CURRENT->number_of_headers++;
+    if(CURRENT) CURRENT->number_of_headers++;
   }
 
   action end_headers {
-    if(CURRENT->on_headers_complete)
+    if(CURRENT && CURRENT->on_headers_complete)
       CURRENT->on_headers_complete(CURRENT);
   }
 
@@ -171,17 +177,19 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
   }
 
   action body_logic {
-    if(CURRENT->transfer_encoding == EBB_CHUNKED) {
-      fnext ChunkedBody;
-    } else {
-      /* this is pretty stupid. i'd prefer to combine this with skip_chunk_data */
-      parser->chunk_size = CURRENT->content_length;
-      p += 1;  
-      skip_body(&p, parser, MIN(REMAINING, CURRENT->content_length));
-      fhold;
-      if(parser->chunk_size > REMAINING) {
-        fbreak;
-      } 
+    if(CURRENT) { 
+      if(CURRENT->transfer_encoding == EBB_CHUNKED) {
+        fnext ChunkedBody;
+      } else {
+        /* this is pretty stupid. i'd prefer to combine this with skip_chunk_data */
+        parser->chunk_size = CURRENT->content_length;
+        p += 1;  
+        skip_body(&p, parser, MIN(REMAINING, CURRENT->content_length));
+        fhold;
+        if(parser->chunk_size > REMAINING) {
+          fbreak;
+        } 
+      }
     }
   }
 
@@ -217,20 +225,20 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
 #  headers
 
-  Method = ( "COPY"      %{ CURRENT->method = EBB_COPY;      }
-           | "DELETE"    %{ CURRENT->method = EBB_DELETE;    }
-           | "GET"       %{ CURRENT->method = EBB_GET;       }
-           | "HEAD"      %{ CURRENT->method = EBB_HEAD;      }
-           | "LOCK"      %{ CURRENT->method = EBB_LOCK;      }
-           | "MKCOL"     %{ CURRENT->method = EBB_MKCOL;     }
-           | "MOVE"      %{ CURRENT->method = EBB_MOVE;      }
-           | "OPTIONS"   %{ CURRENT->method = EBB_OPTIONS;   }
-           | "POST"      %{ CURRENT->method = EBB_POST;      }
-           | "PROPFIND"  %{ CURRENT->method = EBB_PROPFIND;  }
-           | "PROPPATCH" %{ CURRENT->method = EBB_PROPPATCH; }
-           | "PUT"       %{ CURRENT->method = EBB_PUT;       }
-           | "TRACE"     %{ CURRENT->method = EBB_TRACE;     }
-           | "UNLOCK"    %{ CURRENT->method = EBB_UNLOCK;    }
+  Method = ( "COPY"      %{ if(CURRENT) CURRENT->method = EBB_COPY;      }
+           | "DELETE"    %{ if(CURRENT) CURRENT->method = EBB_DELETE;    }
+           | "GET"       %{ if(CURRENT) CURRENT->method = EBB_GET;       }
+           | "HEAD"      %{ if(CURRENT) CURRENT->method = EBB_HEAD;      }
+           | "LOCK"      %{ if(CURRENT) CURRENT->method = EBB_LOCK;      }
+           | "MKCOL"     %{ if(CURRENT) CURRENT->method = EBB_MKCOL;     }
+           | "MOVE"      %{ if(CURRENT) CURRENT->method = EBB_MOVE;      }
+           | "OPTIONS"   %{ if(CURRENT) CURRENT->method = EBB_OPTIONS;   }
+           | "POST"      %{ if(CURRENT) CURRENT->method = EBB_POST;      }
+           | "PROPFIND"  %{ if(CURRENT) CURRENT->method = EBB_PROPFIND;  }
+           | "PROPPATCH" %{ if(CURRENT) CURRENT->method = EBB_PROPPATCH; }
+           | "PUT"       %{ if(CURRENT) CURRENT->method = EBB_PUT;       }
+           | "TRACE"     %{ if(CURRENT) CURRENT->method = EBB_TRACE;     }
+           | "UNLOCK"    %{ if(CURRENT) CURRENT->method = EBB_UNLOCK;    }
            ); # Not allowing extension methods
 
   HTTP_Version = "HTTP/" digit+ $version_major "." digit+ $version_minor;
@@ -292,15 +300,15 @@ static int unhex[] = {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
 
 static void
 skip_body(const char **p, ebb_request_parser *parser, size_t nskip) {
-  if(CURRENT->on_body && nskip > 0) {
+  if(CURRENT && CURRENT->on_body && nskip > 0) {
     CURRENT->on_body(CURRENT, *p, nskip);
   }
-  CURRENT->body_read += nskip;
+  if(CURRENT) CURRENT->body_read += nskip;
   parser->chunk_size -= nskip;
   *p += nskip;
   if(0 == parser->chunk_size) {
     parser->eating = FALSE;
-    if(CURRENT->transfer_encoding == EBB_IDENTITY) {
+    if(CURRENT && CURRENT->transfer_encoding == EBB_IDENTITY) {
       END_REQUEST;
     }
   } else {
