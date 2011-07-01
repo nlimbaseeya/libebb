@@ -153,9 +153,9 @@ session_cache_store(void *data, gnutls_datum_t key, gnutls_datum_t value)
   cache->value.data = (void*)cache->value_storage;
 
   cache->node.key = &cache->key;
-  cache->node.value = &cache;
+  cache->node.value = cache;
 
-  rbtree_insert(tree, (rbtree_node)cache);
+  rbtree_insert(tree, &cache->node);
 
   //printf("session_cache_store\n");
 
