@@ -647,7 +647,6 @@ ebb_server_init(ebb_server *server, struct ev_loop *loop)
   server->secure = FALSE;
 
 #ifdef HAVE_GNUTLS
-  rbtree_init(&server->session_cache, session_cache_compare);
   server->credentials = NULL;
 #endif
 
@@ -687,6 +686,7 @@ ebb_server_set_secure (ebb_server *server, const char *cert_file, const char *ke
     error("loading certificates");
     return -1;
   }
+  rbtree_init(&server->session_cache, session_cache_compare);
   return 1;
 }
 #endif /* HAVE_GNUTLS */
